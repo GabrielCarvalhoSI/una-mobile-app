@@ -1,155 +1,88 @@
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import {
-    Animated,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const formFadeAnim = useRef(new Animated.Value(0)).current;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    Animated.timing(formFadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erro', 'Preencha todos os campos.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro de autenticação.');
+      }
+
+      // Armazena o token de sessão para uso nas próximas requisições
+      await AsyncStorage.setItem('userToken', data.access_token);
+      router.push('/mapa');
+
+    } catch (error: any) {
+      Alert.alert('Erro no Login', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-
-      <View style={styles.backButtonContainer}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-      </View>
-
+    <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Image 
-          source={require('../assets/images/una.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <Image source={require('../assets/images/una.png')} style={styles.logo} resizeMode="contain" />
       </View>
-
-      <Animated.View style={[styles.formContainer, { opacity: formFadeAnim }]}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Usuário</Text>
-          <TextInput 
-            style={styles.input} 
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Senha</Text>
-          <TextInput 
-            style={styles.input} 
-            secureTextEntry
-          />
-        </View>
-
-        <TouchableOpacity style={styles.btnPurple} onPress={() => router.push('/mapa')}>
-          <Text style={styles.btnPurpleText}>Entrar</Text>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Bem-vinda de volta!</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="E-mail"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Senha"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity style={styles.btnLogin} onPress={handleLogin} disabled={loading}>
+          <Text style={styles.btnLoginText}>{loading ? 'Aguarde...' : 'Entrar'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.forgotPassword}>
-          <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
+        <TouchableOpacity onPress={() => router.push('/cadastro')}>
+          <Text style={styles.linkText}>Não tem conta? Cadastre-se</Text>
         </TouchableOpacity>
-      </Animated.View>
-    </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#D1BED5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  backButtonContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    zIndex: 10,
-  },
-  backButton: {
-    padding: 10,
-  },
-  backButtonText: {
-    fontSize: 32,
-    color: '#ffffff',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-    marginTop: -60,
-  },
-  logo: {
-    width: 150,
-    height: 130,
-  },
-  formContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  inputGroup: {
-    width: '100%',
-    marginBottom: 15,
-  },
-  label: {
-    color: '#3B0059',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 5,
-    marginLeft: 5,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    width: '100%',
-    height: 50,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    fontSize: 16,
-  },
-  btnPurple: {
-    backgroundColor: '#3B0059',
-    width: 200,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  btnPurpleText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  forgotPassword: {
-    marginTop: 20,
-  },
-  forgotPasswordText: {
-    color: '#3B0059',
-    fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+  container: { flex: 1, backgroundColor: '#FAF5FF', justifyContent: 'center', padding: 20 },
+  logoContainer: { alignItems: 'center', marginBottom: 40 },
+  logo: { width: 120, height: 60 },
+  formContainer: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 15, elevation: 3 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#3B0059', marginBottom: 20, textAlign: 'center' },
+  input: { backgroundColor: '#F0E6F2', borderRadius: 10, padding: 15, marginBottom: 15, fontSize: 16, color: '#3B0059' },
+  btnLogin: { backgroundColor: '#3B0059', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 15 },
+  btnLoginText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  linkText: { color: '#D147A3', textAlign: 'center', fontWeight: '600', fontSize: 14 }
 });
