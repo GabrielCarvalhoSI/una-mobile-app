@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, Platform, Alert, FlatList, Modal, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image, Platform, Alert, FlatList, Modal, StatusBar, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,7 +12,6 @@ interface Point {
   longitude: number;
   qtd: number;
   endereco: string;
-  foto?: string;
 }
 
 function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -57,7 +56,6 @@ export default function ListScreen() {
       const formatted = data.map((pt: any) => ({
         ...pt,
         endereco: [pt.campus, pt.floor, pt.room].filter(Boolean).join(' — ') || pt.nome,
-        foto: 'https://via.placeholder.com/150/D147A3/FFFFFF',
       }));
       setPoints(formatted);
     } catch {
@@ -139,7 +137,7 @@ export default function ListScreen() {
         ) : null}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.cardItem} onPress={() => setSelectedPoint(item)}>
-            <Image source={{ uri: item.foto }} style={styles.cardImage} />
+            <Image source={require('../assets/images/una.png')} style={styles.cardImage} resizeMode="contain" />
             <View style={styles.cardInfo}>
               <Text style={styles.cardTitle}>{item.sigla}</Text>
               <Text style={styles.cardAddress}>{item.endereco}</Text>
@@ -165,6 +163,16 @@ export default function ListScreen() {
                     <Text style={styles.btnActionText}>Doar</Text>
                   </TouchableOpacity>
                 </View>
+                <TouchableOpacity style={styles.btnMaps} onPress={() => {
+                  const { latitude, longitude, sigla } = selectedPoint!;
+                  const url = Platform.select({
+                    ios: `maps:0,0?q=${latitude},${longitude}(${sigla})`,
+                    default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+                  })!;
+                  Linking.openURL(url);
+                }}>
+                  <Text style={styles.btnMapsText}>📍 Como chegar</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.btnReclamar} onPress={() => { const p = selectedPoint; setSelectedPoint(null); router.push(`/reclame?point_id=${p!.id}&sigla=${p!.sigla}`); }}>
                   <Text style={styles.btnReclamarText}>Reportar problema</Text>
                 </TouchableOpacity>
@@ -198,20 +206,20 @@ export default function ListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF5FF' },
-  header: { height: Platform.OS === 'ios' ? 100 : 80, paddingTop: Platform.OS === 'ios' ? 40 : 30, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#F0E6F2' },
+  header: { height: Platform.OS === 'ios' ? 90 : 70, paddingTop: Platform.OS === 'ios' ? 40 : 25, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F0E6F2' },
   logo: { width: 80, height: 40 },
   profileIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0E6F2', alignItems: 'center', justifyContent: 'center' },
   profileIconText: { fontSize: 20 },
-  controlsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E6D4EA' },
+  controlsContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E6D4EA' },
   controlsLabel: { fontSize: 18, fontWeight: 'bold', color: '#3B0059' },
   controlsActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   locBtn: { backgroundColor: '#E65C9C', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
   locBtnText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 },
   selectButton: { backgroundColor: '#F0E6F2', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10 },
   selectButtonText: { color: '#5D2689', fontWeight: '600', fontSize: 14 },
-  listContent: { padding: 15, paddingBottom: 40 },
-  cardItem: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 15, padding: 15, marginBottom: 15, elevation: 3 },
-  cardImage: { width: 60, height: 60, borderRadius: 10, marginRight: 15 },
+  listContent: { padding: 12, paddingBottom: 30 },
+  cardItem: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 10, elevation: 3 },
+  cardImage: { width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#F0E6F2' },
   cardInfo: { flex: 1, justifyContent: 'center' },
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#3B0059', marginBottom: 5 },
   cardAddress: { fontSize: 13, color: '#8A6E91', marginBottom: 5 },
@@ -220,18 +228,20 @@ const styles = StyleSheet.create({
   sortModalBox: { backgroundColor: '#FFFFFF', width: 250, borderRadius: 15, padding: 10, elevation: 5 },
   sortOption: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#F0E6F2' },
   sortOptionText: { fontSize: 16, color: '#3B0059', textAlign: 'center', fontWeight: '500' },
-  detailsModalBox: { width: '85%', backgroundColor: '#FFFFFF', borderRadius: 25, padding: 25, alignItems: 'center', elevation: 10 },
-  detailsTitle: { fontSize: 22, fontWeight: 'bold', color: '#3B0059', marginBottom: 5 },
-  detailsAddress: { fontSize: 14, color: '#8A6E91', textAlign: 'center', marginBottom: 15 },
-  detailsQtd: { fontSize: 18, fontWeight: 'bold', color: '#D147A3', marginBottom: 25 },
-  detailsActionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 15 },
-  btnAction: { flex: 1, backgroundColor: '#5D2689', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 },
-  btnActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
+  detailsModalBox: { width: '90%', maxWidth: 400, backgroundColor: '#FFFFFF', borderRadius: 20, paddingVertical: 18, paddingHorizontal: 20, alignItems: 'center', elevation: 10 },
+  detailsTitle: { fontSize: 19, fontWeight: 'bold', color: '#3B0059', marginBottom: 3 },
+  detailsAddress: { fontSize: 13, color: '#8A6E91', textAlign: 'center', marginBottom: 8 },
+  detailsQtd: { fontSize: 16, fontWeight: 'bold', color: '#D147A3', marginBottom: 12 },
+  detailsActionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 8 },
+  btnAction: { flex: 1, backgroundColor: '#5D2689', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
+  btnActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
   emptyContainer: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: 16, fontWeight: '600', color: '#8A6E91', marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: '#B8A0BE' },
-  btnReclamar: { width: '100%', paddingVertical: 10, alignItems: 'center', marginBottom: 5 },
-  btnReclamarText: { color: '#D93838', fontSize: 14, fontWeight: '600' },
-  btnClose: { paddingVertical: 10 },
-  btnCloseText: { color: '#8A6E91', fontSize: 16, fontWeight: '600' }
+  btnMaps: { backgroundColor: '#D147A3', width: '100%', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginBottom: 6 },
+  btnMapsText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  btnReclamar: { width: '100%', paddingVertical: 8, alignItems: 'center', marginBottom: 2 },
+  btnReclamarText: { color: '#D93838', fontSize: 13, fontWeight: '600' },
+  btnClose: { paddingVertical: 8 },
+  btnCloseText: { color: '#8A6E91', fontSize: 14, fontWeight: '600' }
 });
