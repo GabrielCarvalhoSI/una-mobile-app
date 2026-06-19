@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
 export default function CadastroScreen() {
@@ -17,17 +18,26 @@ export default function CadastroScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: nome } }
-    });
-    setLoading(false);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, full_name: nome }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Erro ao cadastrar.');
 
-    if (error) {
+      await AsyncStorage.setItem('userToken', data.access_token);
+      await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token ?? '',
+      });
+
+      Alert.alert('Sucesso', 'Conta criada com sucesso!', [{ text: 'OK', onPress: () => router.push('/mapa') }]);
+    } catch (error: any) {
       Alert.alert('Erro no Cadastro', error.message);
-    } else {
-      Alert.alert('Sucesso', 'Conta criada com sucesso!', [{ text: 'OK', onPress: () => router.push('/login') }]);
+    } finally {
+      setLoading(false);
     }
   };
 

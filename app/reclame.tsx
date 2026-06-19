@@ -1,6 +1,7 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
+    Alert,
     Image,
     Modal,
     StatusBar,
@@ -10,26 +11,46 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const CATEGORIAS = [
+  { label: 'Falta de absorvente',  value: 'empty_stock' },
+  { label: 'Não consigo retirar',  value: 'inaccessible' },
+  { label: 'Item danificado',      value: 'damaged' },
+  { label: 'Outro problema',       value: 'other' },
+];
 
 export default function ReclameScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const pointId = params.point_id as string;
+  const siglaPonto = params.sigla as string || 'Ponto';
+
   const [modalVisible, setModalVisible] = useState(false);
-  const [ponto, setPonto] = useState('CIn'); // Pode ser recebido dinamicamente depois
+  const [loading, setLoading] = useState(false);
 
-  const categorias = [
-    "Falta de absorvente", 
-    "Não consigo retirar", 
-    "QR Code faltando"
-  ];
-
-  const handleSelecionarOcorrencia = (categoriaSelecionada: string) => {
-    // Aqui você enviaria o relato para o backend no futuro
-    setModalVisible(true); // Abre a "tela" de confirmação 
+  const handleSelecionarOcorrencia = async (categoria: { label: string; value: string }) => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/feedbacks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ point_id: pointId, category: categoria.value }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || data.message || 'Erro ao enviar relato.');
+      setModalVisible(true);
+    } catch (error: any) {
+      Alert.alert('Erro', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFechar = () => {
     setModalVisible(false);
-    router.push('/mapa'); // Retorna ao mapa após confirmar
+    router.push('/mapa');
   };
 
 return (
@@ -50,23 +71,23 @@ return (
 
       <View style={styles.content}>
         <Text style={styles.labelInput}>Ponto da ocorrência:</Text>
-        <TextInput 
+        <TextInput
           style={styles.inputPonto}
-          value={ponto}
-          onChangeText={setPonto}
-          editable={false} 
+          value={siglaPonto}
+          editable={false}
         />
 
         <Text style={styles.labelOcorrencia}>Selecione a ocorrência</Text>
-        
+
         <View style={styles.buttonGroup}>
-          {categorias.map((cat, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.btnCategoria}
+          {CATEGORIAS.map((cat) => (
+            <TouchableOpacity
+              key={cat.value}
+              style={[styles.btnCategoria, loading && { opacity: 0.5 }]}
               onPress={() => handleSelecionarOcorrencia(cat)}
+              disabled={loading}
             >
-              <Text style={styles.btnCategoriaText}>{cat}</Text>
+              <Text style={styles.btnCategoriaText}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
         </View>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -31,8 +32,11 @@ export default function LoginScreen() {
         throw new Error(data.message || 'Erro de autenticação.');
       }
 
-      // Armazena o token de sessão para uso nas próximas requisições
       await AsyncStorage.setItem('userToken', data.access_token);
+      await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token ?? '',
+      });
       router.push('/mapa');
 
     } catch (error: any) {

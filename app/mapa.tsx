@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image, Platform, Alert, FlatList, Modal, Linking, StatusBar } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Point {
   id: string;
@@ -36,26 +36,27 @@ export default function ListScreen() {
 
   const fetchPoints = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('collection_points')
-      .select('id, name, address, latitude, longitude, image_url, inventory(quantity)');
-
-    if (error) {
-      Alert.alert('Erro', 'Falha ao buscar os centros de distribuição.');
-    } else if (data) {
-      const formattedPoints = data.map((pt: any) => ({
-        id: pt.id,
-        sigla: pt.name.split('-')[0]?.trim() || pt.name,
-        nome: pt.name,
-        endereco: pt.address,
-        latitude: pt.latitude,
-        longitude: pt.longitude,
-        foto: pt.image_url || 'https://via.placeholder.com/150/D147A3/FFFFFF',
-        qtd: pt.inventory && pt.inventory.length > 0 ? pt.inventory[0].quantity : 0
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const coords = location?.coords;
+      const query = coords ? `?lat=${coords.latitude}&lng=${coords.longitude}` : '';
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/collection-points${query}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erro ao buscar pontos.');
+      const formatted = data.map((pt: any) => ({
+        ...pt,
+        endereco: [pt.campus, pt.floor, pt.room].filter(Boolean).join(' — ') || pt.nome,
+        foto: 'https://via.placeholder.com/150/D147A3/FFFFFF',
       }));
-      setPoints(formattedPoints);
+      setPoints(formatted);
+    } catch {
+      Alert.alert('Erro', 'Falha ao buscar os pontos de coleta.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => { fetchPoints(); }, []);
@@ -143,10 +144,10 @@ export default function ListScreen() {
                 <Text style={styles.detailsAddress}>{selectedPoint.endereco}</Text>
                 <Text style={styles.detailsQtd}>Estoque: {selectedPoint.qtd}</Text>
                 <View style={styles.detailsActionRow}>
-                  <TouchableOpacity style={styles.btnAction} onPress={() => { setSelectedPoint(null); router.push('/retirada'); }}>
+                  <TouchableOpacity style={styles.btnAction} onPress={() => { const p = selectedPoint; setSelectedPoint(null); router.push(`/retirada?point_id=${p!.id}&sigla=${p!.sigla}&qtd=${p!.qtd}`); }}>
                     <Text style={styles.btnActionText}>Retirar</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnAction} onPress={() => { setSelectedPoint(null); router.push('/doacao'); }}>
+                  <TouchableOpacity style={styles.btnAction} onPress={() => { const p = selectedPoint; setSelectedPoint(null); router.push(`/doacao?point_id=${p!.id}&sigla=${p!.sigla}`); }}>
                     <Text style={styles.btnActionText}>Doar</Text>
                   </TouchableOpacity>
                 </View>
