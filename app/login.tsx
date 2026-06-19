@@ -32,12 +32,16 @@ export default function LoginScreen() {
         throw new Error(data.message || 'Erro de autenticação.');
       }
 
+      if (!data.access_token || !data.refresh_token) {
+        throw new Error('Resposta inválida do servidor.');
+      }
+
       await AsyncStorage.setItem('userToken', data.access_token);
       await supabase.auth.setSession({
         access_token: data.access_token,
-        refresh_token: data.refresh_token ?? '',
+        refresh_token: data.refresh_token,
       });
-      router.push('/mapa');
+      router.replace('/mapa');
 
     } catch (error: any) {
       Alert.alert('Erro no Login', error.message);

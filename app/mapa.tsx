@@ -38,12 +38,21 @@ export default function ListScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        router.replace('/login');
+        return;
+      }
       const coords = location?.coords;
       const query = coords ? `?lat=${coords.latitude}&lng=${coords.longitude}` : '';
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/collection-points${query}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      if (response.status === 401) {
+        await AsyncStorage.removeItem('userToken');
+        router.replace('/login');
+        return;
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao buscar pontos.');
       const formatted = data.map((pt: any) => ({

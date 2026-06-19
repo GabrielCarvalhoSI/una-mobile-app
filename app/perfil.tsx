@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
 export default function PerfilScreen() {
@@ -22,6 +23,7 @@ export default function PerfilScreen() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    await AsyncStorage.removeItem('userToken');
     router.replace('/login');
   };
 
@@ -49,10 +51,9 @@ export default function PerfilScreen() {
         </View>
         <Text style={styles.userName}>{profile?.full_name || 'Usuária'}</Text>
         
-        <View style={styles.statsCard}>
-          <Text style={styles.statsLabel}>Pontos acumulados:</Text>
-          <Text style={styles.statsValue}>{profile?.points_earned || 0}</Text>
-        </View>
+        {profile?.pronouns && (
+          <Text style={styles.pronounsText}>{profile.pronouns}</Text>
+        )}
 
         <TouchableOpacity style={styles.btnLogout} onPress={handleLogout}>
           <Text style={styles.btnLogoutText}>Sair da conta</Text>
@@ -72,9 +73,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#D147A3', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   avatarInitial: { fontSize: 40, color: '#FFFFFF', fontWeight: 'bold' },
   userName: { fontSize: 24, fontWeight: 'bold', color: '#3B0059', marginBottom: 30 },
-  statsCard: { backgroundColor: '#FFFFFF', width: '100%', padding: 20, borderRadius: 15, alignItems: 'center', marginBottom: 40, elevation: 3 },
-  statsLabel: { fontSize: 16, color: '#8A6E91', marginBottom: 10 },
-  statsValue: { fontSize: 36, fontWeight: 'bold', color: '#5D2689' },
+  pronounsText: { fontSize: 16, color: '#8A6E91', marginBottom: 30 },
   btnLogout: { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#D93838', width: '100%', padding: 15, borderRadius: 10, alignItems: 'center' },
   btnLogoutText: { color: '#D93838', fontSize: 16, fontWeight: 'bold' }
 });
