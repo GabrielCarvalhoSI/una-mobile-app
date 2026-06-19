@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { SupabaseService } from '../supabase/supabase.service'
 
 @Injectable()
@@ -13,7 +13,7 @@ export class CollectionPointsService {
       p_limit: limit,
     })
 
-    if (error) throw new Error(error.message)
+    if (error) throw new BadRequestException(error.message)
 
     // Mapeia para o formato esperado pelo app mobile
     return (data ?? []).map((p) => ({

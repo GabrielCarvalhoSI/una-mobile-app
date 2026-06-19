@@ -29,12 +29,17 @@ export class AuthService {
       throw new InternalServerErrorException(error.message)
     }
 
-    // Aguarda trigger handle_new_user criar o profile e busca para confirmar
-    const { data: profile } = await this.supabase.admin
-      .from('profiles')
-      .select('id, full_name, username, role')
-      .eq('id', data.user.id)
-      .single()
+    // Aguarda trigger handle_new_user criar o profile
+    let profile: any = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data: p } = await this.supabase.admin
+        .from('profiles')
+        .select('id, full_name, username, role')
+        .eq('id', data.user.id)
+        .single()
+      if (p) { profile = p; break }
+      await new Promise((r) => setTimeout(r, 300))
+    }
 
     // Gera token de sessão para a usuária recém-criada via sign-in
     const { data: session, error: sessionError } = await this.supabase.admin.auth.signInWithPassword({
