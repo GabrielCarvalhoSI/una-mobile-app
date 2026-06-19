@@ -27,14 +27,20 @@ export default function RetiradaScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
+      if (!token) { router.replace('/login'); return; }
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/transactions/withdrawal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ point_id: pointId, item_type: itemType }),
       });
+      if (response.status === 401) {
+        await AsyncStorage.removeItem('userToken');
+        router.replace('/login');
+        return;
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || data.message || 'Erro na retirada.');
-      Alert.alert('Retirada Confirmada', data.message, [{ text: 'OK', onPress: () => router.push('/mapa') }]);
+      Alert.alert('Retirada Confirmada', data.message, [{ text: 'OK', onPress: () => router.replace('/mapa') }]);
     } catch (error: any) {
       Alert.alert('Erro', error.message);
     } finally {

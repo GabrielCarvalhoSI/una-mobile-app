@@ -33,6 +33,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O UNA precisa da sua localização para mostrar os pontos de coleta mais próximos."
+        }
       ]
     ],
     "experiments": {

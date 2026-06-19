@@ -11,12 +11,24 @@ export default function PerfilScreen() {
 
   useEffect(() => {
     const loadData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(data);
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) { router.replace('/login'); return; }
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/profiles/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status === 401) {
+          await AsyncStorage.removeItem('userToken');
+          router.replace('/login');
+          return;
+        }
+        const data = await response.json();
+        if (response.ok) setProfile(data);
+      } catch {
+        // silently fail — profile will show defaults
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadData();
   }, []);

@@ -27,11 +27,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error(`${request.method} ${request.url}`, exception)
     }
 
+    const errorMessage =
+      typeof message === 'string'
+        ? message
+        : Array.isArray((message as any).message)
+          ? (message as any).message[0]
+          : (message as any).message ?? message
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      error: typeof message === 'string' ? message : (message as any).message ?? message,
+      error: errorMessage,
+      message: errorMessage,
     })
   }
 }

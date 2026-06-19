@@ -33,11 +33,17 @@ export default function ReclameScreen() {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
+      if (!token) { router.replace('/login'); return; }
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/feedbacks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ point_id: pointId, category: categoria.value }),
       });
+      if (response.status === 401) {
+        await AsyncStorage.removeItem('userToken');
+        router.replace('/login');
+        return;
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || data.message || 'Erro ao enviar relato.');
       setModalVisible(true);

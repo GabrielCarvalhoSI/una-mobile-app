@@ -1,26 +1,50 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { Animated, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      })
-    ]).start();
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) {
+          router.replace('/mapa');
+          return;
+        }
+        await AsyncStorage.removeItem('userToken');
+      }
+      setChecking(false);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ]).start();
+    };
+    checkAuth();
   }, []);
+
+  if (checking) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#3B0059" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

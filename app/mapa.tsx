@@ -160,6 +160,9 @@ export default function ListScreen() {
                     <Text style={styles.btnActionText}>Doar</Text>
                   </TouchableOpacity>
                 </View>
+                <TouchableOpacity style={styles.btnReclamar} onPress={() => { const p = selectedPoint; setSelectedPoint(null); router.push(`/reclame?point_id=${p!.id}&sigla=${p!.sigla}`); }}>
+                  <Text style={styles.btnReclamarText}>Reportar problema</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.btnClose} onPress={() => setSelectedPoint(null)}>
                   <Text style={styles.btnCloseText}>Fechar</Text>
                 </TouchableOpacity>
@@ -219,6 +222,8 @@ const styles = StyleSheet.create({
   detailsActionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 15 },
   btnAction: { flex: 1, backgroundColor: '#5D2689', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 },
   btnActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
+  btnReclamar: { width: '100%', paddingVertical: 10, alignItems: 'center', marginBottom: 5 },
+  btnReclamarText: { color: '#D93838', fontSize: 14, fontWeight: '600' },
   btnClose: { paddingVertical: 10 },
   btnCloseText: { color: '#8A6E91', fontSize: 16, fontWeight: '600' }
 });
