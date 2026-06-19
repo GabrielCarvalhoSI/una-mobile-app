@@ -46,6 +46,7 @@ export class AuthService {
 
     return {
       access_token: session.session.access_token,
+      refresh_token: session.session.refresh_token,
       user: {
         id: data.user.id,
         email: data.user.email,
@@ -72,6 +73,7 @@ export class AuthService {
 
     return {
       access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
       user: {
         id: data.user.id,
         email: data.user.email,

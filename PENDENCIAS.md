@@ -1,6 +1,7 @@
 # Pendências — Una Mobile App
 
 O fluxo principal (cadastro → login → mapa → retirada → doação → relato → perfil) está integrado com o backend.
+O backend NestJS está na pasta `backend/` deste mesmo repositório.
 A navegação de pontos usa lista (`FlatList`) — sem mapa nativo, sem dependência do Google Maps.
 Os itens abaixo são o que falta para o app estar pronto para uso real.
 
@@ -12,9 +13,9 @@ Os itens abaixo são o que falta para o app estar pronto para uso real.
 
 O JWT do Supabase expira em 1 hora. Quando isso acontece, todas as chamadas ao backend retornam 401 e o usuário precisa logar novamente manualmente.
 
-**Como resolver:**
+> O backend **já retorna** `refresh_token` no login/cadastro, então o `setSession` funciona. Falta só registrar o listener de renovação automática.
 
-Ao fazer login/cadastro, o backend retorna `refresh_token`. Usar o cliente Supabase para renovar automaticamente:
+**Como resolver:**
 
 ```ts
 // O setSession já ativa o auto-refresh interno do cliente Supabase
@@ -60,7 +61,20 @@ No modal de detalhes do ponto em `mapa.tsx`, adicionar um terceiro botão ao lad
 
 ---
 
-## P3 — Logout em perfil.tsx não limpa o token do AsyncStorage
+## P3 — "Pontos acumulados" no perfil lê campo inexistente
+
+**Arquivo:** `app/perfil.tsx`
+
+A tela exibe "Pontos acumulados" lendo `profile?.points_earned`, mas a tabela `profiles` não tem essa coluna no schema. Resultado: sempre mostra `0`.
+
+**Como resolver (escolher um):**
+
+- **Remover** o card de pontos, já que não há sistema de gamificação no banco; ou
+- **Adicionar** a coluna ao banco (`ALTER TABLE profiles ADD COLUMN points_earned INTEGER DEFAULT 0`) e a lógica para incrementá-la (ex: trigger em `transactions`).
+
+---
+
+## P4 — Logout em perfil.tsx não limpa o token do AsyncStorage
 
 **Arquivo:** `app/perfil.tsx`
 
@@ -78,7 +92,7 @@ const handleLogout = async () => {
 
 ---
 
-## P4 — Sem config de build para APK (eas.json ausente)
+## P5 — Sem config de build para APK (eas.json ausente)
 
 Para gerar um APK ou IPA distribuível via Expo EAS Build, é necessário o arquivo `eas.json` na raiz do projeto.
 
@@ -118,5 +132,6 @@ Para gerar APK: `eas build --platform android --profile preview`
 |---|---|---|
 | P1 | Token refresh | Sessão expira em 1h sem renovação automática |
 | P2 | Botão "Reclamar" no mapa | `reclame.tsx` inacessível pelo fluxo normal |
-| P3 | Logout não limpa AsyncStorage | Inconsistência menor |
-| P4 | eas.json ausente | Não é possível gerar APK distribuível |
+| P3 | `points_earned` inexistente | Perfil sempre mostra 0 pontos |
+| P4 | Logout não limpa AsyncStorage | Inconsistência menor |
+| P5 | eas.json ausente | Não é possível gerar APK distribuível |
