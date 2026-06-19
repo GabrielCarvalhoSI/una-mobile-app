@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image, Platform, Alert, FlatList, Modal, Linking, StatusBar } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image, Platform, Alert, FlatList, Modal, StatusBar } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,7 +31,6 @@ export default function ListScreen() {
   const [sortOrder, setSortOrder] = useState<'distancia' | 'alfabetica'>('alfabetica');
   const [showSortModal, setShowSortModal] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
-  const [showNavModal, setShowNavModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchPoints = async () => {
@@ -132,6 +131,12 @@ export default function ListScreen() {
         contentContainerStyle={styles.listContent}
         refreshing={loading}
         onRefresh={fetchPoints}
+        ListEmptyComponent={!loading ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Nenhum ponto de coleta encontrado.</Text>
+            <Text style={styles.emptySubtext}>Puxe para baixo para atualizar.</Text>
+          </View>
+        ) : null}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.cardItem} onPress={() => setSelectedPoint(item)}>
             <Image source={{ uri: item.foto }} style={styles.cardImage} />
@@ -144,7 +149,7 @@ export default function ListScreen() {
         )}
       />
 
-      <Modal visible={!!selectedPoint && !showNavModal} transparent animationType="slide">
+      <Modal visible={!!selectedPoint} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.detailsModalBox}>
             {selectedPoint && (
@@ -222,6 +227,9 @@ const styles = StyleSheet.create({
   detailsActionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 15 },
   btnAction: { flex: 1, backgroundColor: '#5D2689', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 },
   btnActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
+  emptyContainer: { alignItems: 'center', paddingTop: 60 },
+  emptyText: { fontSize: 16, fontWeight: '600', color: '#8A6E91', marginBottom: 8 },
+  emptySubtext: { fontSize: 14, color: '#B8A0BE' },
   btnReclamar: { width: '100%', paddingVertical: 10, alignItems: 'center', marginBottom: 5 },
   btnReclamarText: { color: '#D93838', fontSize: 14, fontWeight: '600' },
   btnClose: { paddingVertical: 10 },
