@@ -13,11 +13,20 @@ React Native com Expo Router. Consome a API REST `una-backend`.
 | AsyncStorage | Armazenamento do JWT |
 | expo-location | GPS para ordenação de pontos por distância |
 
+## Estrutura do Repositório
+
+```
+una-mobile-app/
+├── app/          — telas React Native (Expo Router)
+├── backend/      — API NestJS (rodar separado: cd backend && npm run start:dev)
+└── ...
+```
+
 ## Repositórios relacionados
 
-| Camada | Repositório |
+| Camada | Localização |
 |---|---|
-| Backend API | `anaraque-l/una-backend` |
+| Backend API | `backend/` — **neste repo** |
 | Frontend Web (Admin) | `analauraboliveira/Una` → pasta `frontend-web/` |
 | Banco de dados | `analauraboliveira/Una` → pasta `database/` |
 
