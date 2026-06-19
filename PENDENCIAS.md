@@ -1,39 +1,14 @@
 # Pendências — Una Mobile App
 
 O fluxo principal (cadastro → login → mapa → retirada → doação → relato → perfil) está integrado com o backend.
+A navegação de pontos usa lista (`FlatList`) — sem mapa nativo, sem dependência do Google Maps.
 Os itens abaixo são o que falta para o app estar pronto para uso real.
 
 ---
 
-## P1 — Google Maps API Key (Android crasha sem ela)
+## P1 — Token refresh (sessão expira em ~1h)
 
-**Arquivo:** `app.json`
-
-O plugin `react-native-maps` está configurado mas sem chave do Google Maps.
-O app crasha no Android ao abrir qualquer tela que use o componente de mapa.
-
-**Como resolver:**
-
-1. Acesse [console.cloud.google.com](https://console.cloud.google.com)
-2. Ative a API **Maps SDK for Android**
-3. Crie uma credencial → API Key
-4. Adicione em `app.json`, dentro de `"android"`:
-
-```json
-"android": {
-  "config": {
-    "googleMaps": {
-      "apiKey": "SUA_CHAVE_AQUI"
-    }
-  }
-}
-```
-
----
-
-## P2 — Token refresh (sessão expira em ~1h)
-
-**Arquivos:** `app/login.tsx`, `app/cadastro.tsx`
+**Arquivos:** `app/login.tsx`, `app/cadastro.tsx`, `app/_layout.tsx`
 
 O JWT do Supabase expira em 1 hora. Quando isso acontece, todas as chamadas ao backend retornam 401 e o usuário precisa logar novamente manualmente.
 
@@ -45,7 +20,7 @@ Ao fazer login/cadastro, o backend retorna `refresh_token`. Usar o cliente Supab
 // O setSession já ativa o auto-refresh interno do cliente Supabase
 await supabase.auth.setSession({
   access_token: data.access_token,
-  refresh_token: data.refresh_token, // não usar ?? '' aqui — usar o valor real
+  refresh_token: data.refresh_token, // não usar ?? '' — usar o valor real
 })
 
 // Escutar renovações e atualizar o AsyncStorage
@@ -56,19 +31,19 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 })
 ```
 
-O listener `onAuthStateChange` deve ser registrado uma vez, no contexto raiz do app (ex: `app/_layout.tsx`).
+O listener `onAuthStateChange` deve ser registrado uma vez no contexto raiz do app (`app/_layout.tsx`).
 
 ---
 
-## P3 — Botão "Reclamar" não passa point_id para reclame.tsx
+## P2 — Botão "Reclamar" não passa point_id para reclame.tsx
 
 **Arquivo:** `app/mapa.tsx`
 
-A tela `reclame.tsx` foi integrada com o backend e espera receber `point_id` e `sigla` via parâmetros de navegação. Porém, o `mapa.tsx` ainda não tem um botão "Reclamar" no modal do ponto selecionado.
+A tela `reclame.tsx` está integrada com o backend e espera receber `point_id` e `sigla` via parâmetros de navegação. Porém, o `mapa.tsx` ainda não tem um botão "Reclamar" no modal do ponto selecionado.
 
 **Como resolver:**
 
-No modal de detalhes do ponto em `mapa.tsx`, adicionar um terceiro botão:
+No modal de detalhes do ponto em `mapa.tsx`, adicionar um terceiro botão ao lado de "Retirar" e "Doar":
 
 ```tsx
 <TouchableOpacity
@@ -85,11 +60,11 @@ No modal de detalhes do ponto em `mapa.tsx`, adicionar um terceiro botão:
 
 ---
 
-## P4 — Logout em perfil.tsx não limpa o token do AsyncStorage
+## P3 — Logout em perfil.tsx não limpa o token do AsyncStorage
 
 **Arquivo:** `app/perfil.tsx`
 
-O logout chama `supabase.auth.signOut()` mas não remove o `userToken` do AsyncStorage. Se o usuário reinstalar o app ou o token ficar corrompido, pode haver comportamento inconsistente.
+O logout chama `supabase.auth.signOut()` mas não remove o `userToken` do AsyncStorage. Se o token ficar corrompido, pode haver comportamento inconsistente nas chamadas ao backend.
 
 **Como resolver:**
 
@@ -103,7 +78,7 @@ const handleLogout = async () => {
 
 ---
 
-## P5 — Sem config de build para APK (eas.json ausente)
+## P4 — Sem config de build para APK (eas.json ausente)
 
 Para gerar um APK ou IPA distribuível via Expo EAS Build, é necessário o arquivo `eas.json` na raiz do projeto.
 
@@ -111,7 +86,7 @@ Para gerar um APK ou IPA distribuível via Expo EAS Build, é necessário o arqu
 
 ```bash
 npm install -g eas-cli
-eas init        # associa ao projeto Expo
+eas init              # associa ao projeto Expo
 eas build:configure   # gera eas.json automaticamente
 ```
 
@@ -141,8 +116,7 @@ Para gerar APK: `eas build --platform android --profile preview`
 
 | # | Pendência | Impacto |
 |---|---|---|
-| P1 | Google Maps API Key | Android crasha |
-| P2 | Token refresh | Sessão expira em 1h |
-| P3 | Botão "Reclamar" no mapa | Tela reclame.tsx inacessível pelo fluxo normal |
-| P4 | Logout não limpa AsyncStorage | Inconsistência menor |
-| P5 | eas.json ausente | Não é possível gerar APK distribuível |
+| P1 | Token refresh | Sessão expira em 1h sem renovação automática |
+| P2 | Botão "Reclamar" no mapa | `reclame.tsx` inacessível pelo fluxo normal |
+| P3 | Logout não limpa AsyncStorage | Inconsistência menor |
+| P4 | eas.json ausente | Não é possível gerar APK distribuível |
