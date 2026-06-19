@@ -27,10 +27,14 @@ export default function CadastroScreen() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || data.message || 'Erro ao cadastrar.');
 
+      if (!data.access_token || !data.refresh_token) {
+        throw new Error('Resposta inválida do servidor.');
+      }
+
       await AsyncStorage.setItem('userToken', data.access_token);
       await supabase.auth.setSession({
         access_token: data.access_token,
-        refresh_token: data.refresh_token ?? '',
+        refresh_token: data.refresh_token,
       });
 
       Alert.alert('Sucesso', 'Conta criada com sucesso!', [{ text: 'OK', onPress: () => router.push('/mapa') }]);
